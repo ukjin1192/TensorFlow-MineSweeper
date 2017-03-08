@@ -1,0 +1,13 @@
+# Include your project-specific ignores in this file
+# Read about how to use .gitignore: https://help.github.com/articles/ignoring-files
+
+# Editor temp files:
+.*sw[op]
+*~
+
+# Log & PID files:
+*.log
+*.pid
+
+# Python bytecode:
+*.py[co]
