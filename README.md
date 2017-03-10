@@ -1,13 +1,25 @@
-## Summary 
+## Summary
+
+- Proof of concept for using TensorFlow to improve AI at <a href="https://minemine.io">this Minesweeper game</a>
+
+## Procedure
 
 - Create map randomly
 - Sweep empty block for the first time
 - Sweep or flag cells with given condition
-- AI should pick random cell if there is no cell that could be revealed with given condition
-  - Target : Revealed 'number' cells which has at least one unrevealed cell locally
-	- Varaibles : 'Sum of probabilities', '# of mines around', '# of revealed cells around', '# of unrevealed cell around'
-	- Supervised Learning : Compare with real data
-	- Logistic classification : Determine that mine exists or not
+- Pick random cell if there is no cell that could be revealed with given condition
+  - Target
+	  - Unrevealed cell which has at least one revealed number cell(=not empty or mine) around
+	- X data
+		- Sum of probabilities
+		- Number of mines around
+		- Number of revealed cells around
+		- Number of unrevealed cell around
+	- Y data
+		- 0 or 1 (Mine exists or not)
+	- Method
+	  - Supervised Learning
+		- Logistic classification
   - Optimization
 	  - Use ReLu rather than Sigmoid
 		- Data initialization
