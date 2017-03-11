@@ -43,8 +43,9 @@ def play_minesweeper_game_as_ai():
         indices = find_sweepable_or_flaggable_cells(matrix, row_size, column_size, 
                 revealed_cell_indices, last_clicked_cell_row, last_clicked_cell_column)
     	
-        # TODO Pick random one if it is impossible to find index with given condition
+        # Pick random one if it is impossible to find index with given condition
         if indices == []:
+            collect_data(matrix, revealed_cell_indices, row_size, column_size)
             unrevealed_cell_indices = set(range(0, row_size * column_size)) - revealed_cell_indices
             picked_cell_index = random.choice(list(unrevealed_cell_indices))
             revealed_cell_indices = update_revealed_cell_indices(matrix, revealed_cell_indices, picked_cell_index)
@@ -263,6 +264,99 @@ def get_indices_of_unrevealed_cells(partial_matrix, row_range, column_range, col
             indices.append(row * column_size + column)
     
     return indices
+
+def collect_data(matrix, revealed_cell_indices, row_size, column_size):
+    """
+    Collect data for machine learning
+    """
+    unrevealed_cell_indices = set(range(0, row_size * column_size)) - revealed_cell_indices
+
+    for unrevealed_cell_index in unrevealed_cell_indices:
+        
+        statistics = get_statistics_from_around_cells(matrix, row_size, column_size,
+                unrevealed_cell_index, revealed_cell_indices)
+        
+        # Find unrevealed cells which has at least one revealed number cell around
+        if statistics['number_of_revealed_cells_around'] > 0 and \
+                statistics['number_of_revealed_cells_around'] - statistics['number_of_revealed_mines_around'] > 0:
+            
+            sum_of_probabilities = 0
+            
+            row, column = divmod(unrevealed_cell_index, column_size)
+            row_range = range(max(row - 1, 0), min(row + 1, row_size - 1) + 1)
+            column_range = range(max(column - 1, 0), min(column + 1, column_size - 1) + 1)
+            
+            for adjacent_row in row_range:
+                for adjacent_column in column_range:
+                    
+                    adjacent_cell_index = adjacent_row * column_size + adjacent_column
+                    adjacent_cell_value = matrix[adjacent_cell_index]
+                    if '-' in adjacent_cell_value:
+                        adjacent_cell_value = int(adjacent_cell_value.split('-')[0])
+                    elif adjacent_cell_value != 'M':
+                        adjacent_cell_value = int(adjacent_cell_value)
+                    
+                    # Calulate sum of probabilities for revealed cells around
+                    if adjacent_cell_index != unrevealed_cell_index and \
+                            adjacent_cell_index in revealed_cell_indices and \
+                            adjacent_cell_value != 'M' and adjacent_cell_value > 0:
+                        
+                        temp_statistics = get_statistics_from_around_cells(matrix, 
+                                row_size, column_size, adjacent_cell_index, revealed_cell_indices)
+                        sum_of_probabilities += (adjacent_cell_value - temp_statistics['number_of_revealed_mines_around']) \
+                                / temp_statistics['number_of_unrevealed_cells_around']
+            
+            # X data
+            print('X data :', sum_of_probabilities, 
+                    statistics['number_of_revealed_mines_around'],
+                    statistics['number_of_revealed_cells_around'],
+                    statistics['number_of_unrevealed_cells_around'])
+            
+            # Y data
+            if matrix[unrevealed_cell_index] == 'M':
+                print('Y data : 1')
+            else:
+                print('Y data : 0')
+
+    return None
+
+def get_statistics_from_around_cells(matrix, row_size, column_size, cell_index, revealed_cell_indices):
+    """
+    Get statistics from around cells
+    """
+    # Initialize variables
+    number_of_revealed_cells_around = 0
+    number_of_revealed_mines_around = 0
+    number_of_unrevealed_cells_around = 0
+    
+    row, column = divmod(cell_index, column_size)
+    row_range = range(max(row - 1, 0), min(row + 1, row_size - 1) + 1)
+    column_range = range(max(column - 1, 0), min(column + 1, column_size - 1) + 1)
+    
+    for adjacent_row in row_range:
+        for adjacent_column in column_range:
+            
+            adjacent_cell_index = adjacent_row * column_size + adjacent_column
+            adjacent_cell_value = matrix[adjacent_cell_index]
+            if '-' in adjacent_cell_value:
+                adjacent_cell_value = int(adjacent_cell_value.split('-')[0])
+            elif adjacent_cell_value != 'M':
+                adjacent_cell_value = int(adjacent_cell_value)
+            
+            # Except for the center cell
+            if adjacent_cell_index != cell_index:
+                
+                if adjacent_cell_index in revealed_cell_indices:
+                    number_of_revealed_cells_around += 1
+                    
+                    if adjacent_cell_value == 'M':
+                        number_of_revealed_mines_around += 1
+                else:
+                    number_of_unrevealed_cells_around += 1
+
+    return {'number_of_revealed_cells_around': number_of_revealed_cells_around,
+            'number_of_revealed_mines_around': number_of_revealed_mines_around,
+            'number_of_unrevealed_cells_around': number_of_unrevealed_cells_around}
 
 if __name__ == '__main__':
     """
