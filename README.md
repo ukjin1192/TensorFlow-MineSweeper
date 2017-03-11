@@ -12,7 +12,7 @@
 	  - Unrevealed cell which has at least one revealed number cell(=not empty or mine) around
 	- X data
 		- Sum of probabilities
-		- Number of mines around
+		- Number of revealed mines around
 		- Number of revealed cells around
 		- Number of unrevealed cell around
 	- Y data
@@ -27,6 +27,14 @@
 		- Learning rate = 0.01
 - Training sets : Repeat above procedure to minimize error
 - Test sets : Measure accuracy of model with machine learning
+
+## Command
+
+- Python 3 should be installed
+
+~~~~
+$ python3 ai.py
+~~~~
 
 ## Result (TBD)
 
