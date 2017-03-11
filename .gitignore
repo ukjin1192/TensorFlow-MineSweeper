@@ -11,3 +11,6 @@
 
 # Python bytecode:
 *.py[co]
+
+# Data files:
+*.txt
