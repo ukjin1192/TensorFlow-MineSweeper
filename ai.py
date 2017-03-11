@@ -307,16 +307,16 @@ def collect_data(matrix, revealed_cell_indices, row_size, column_size):
                                 / temp_statistics['number_of_unrevealed_cells_around']
             
             # X data
-            print('X data :', sum_of_probabilities, 
-                    statistics['number_of_revealed_mines_around'],
-                    statistics['number_of_revealed_cells_around'],
-                    statistics['number_of_unrevealed_cells_around'])
+            x_data_file.write(str(sum_of_probabilities) + ' ' +
+                    str(statistics['number_of_revealed_mines_around']) + ' ' +
+                    str(statistics['number_of_revealed_cells_around']) + ' ' +
+                    str(statistics['number_of_unrevealed_cells_around']) + '\n')
             
             # Y data
             if matrix[unrevealed_cell_index] == 'M':
-                print('Y data : 1')
+                y_data_file.write('1\n')
             else:
-                print('Y data : 0')
+                y_data_file.write('0\n')
 
     return None
 
@@ -362,5 +362,14 @@ if __name__ == '__main__':
     """
     Play Minesweeper game as AI for a given time
     """
+    global x_data_file
+    global y_data_file
+
+    x_data_file = open('./x_data.txt', 'w')
+    y_data_file = open('./y_data.txt', 'w')
+
     for count in range(0, 1):
         play_minesweeper_game_as_ai()
+    
+    x_data_file.close()
+    y_data_file.close()
