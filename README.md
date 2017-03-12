@@ -18,16 +18,14 @@
 		- Number of unrevealed cell around
 	- Y data
 		- 0 or 1 (Mine exists or not)
+	- Repeat above procedure many times to get enough data
+- Training sets
 	- Method
 	  - Supervised Learning
 		- Logistic classification
   - Optimization
 		- Data initialization
 		- Learning rate = 0.1
-	  - Use ReLu rather than Sigmoid
-		- Dropout rate = 0.7
-- Get data set : Repeat above procedure many times to get big data
-- Training sets : Create reliable model with machine learning
 - Test sets : Measure accuracy of model
 
 ## Prerequisite
