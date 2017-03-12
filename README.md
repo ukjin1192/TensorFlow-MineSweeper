@@ -21,16 +21,20 @@
 	  - Supervised Learning
 		- Logistic classification
   - Optimization
-	  - Use ReLu rather than Sigmoid
 		- Data initialization
+		- Learning rate = 0.1
+	  - Use ReLu rather than Sigmoid
 		- Dropout rate = 0.7
-		- Learning rate = 0.01
 - Training sets : Repeat above procedure to minimize error
 - Test sets : Measure accuracy of model with machine learning
 
-## Command
+## Prerequisite
 
-- Python 3 should be installed
+- Python 3
+- Numpy
+- TensorFlow
+
+## Command
 
 ~~~~
 $ python3 ai.py
@@ -38,4 +42,5 @@ $ python3 ai.py
 
 ## Result (TBD)
 
-- After 1000 training sets, average accuracy ~= N(%)
+- Preparing data set with 100 games
+- After 2000 training sets, average accuracy ~= N(%)
