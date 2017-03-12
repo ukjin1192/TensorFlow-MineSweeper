@@ -7,7 +7,7 @@
 - Create map randomly
 - Sweep empty block for the first time
 - Sweep or flag cells with given condition
-- Pick random cell if there is no cell that could be revealed with given condition
+- Collect data when AI should pick random cell with given condition
   - Target
 	  - Unrevealed cell which has at least one revealed number cell(=not empty or mine) around
 	- X data
