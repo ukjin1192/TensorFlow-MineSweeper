@@ -6,10 +6,15 @@ import numpy as np
 import random
 import tensorflow as tf
 
-def play_minesweeper_game_as_ai():
+def play_minesweeper_game_as_ai(**kwargs):
     """
     Play Minesweeper game as AI
     """
+    # Judge whether it is training or not
+    training = False
+    if 'training' in kwargs and kwargs['training'] == True:
+        training = True
+
     # Create the smallest map
     map_info = create_map(1)
     row_size = map_info['row_size']
@@ -47,9 +52,18 @@ def play_minesweeper_game_as_ai():
     	
         # Pick random one if it is impossible to find index with given condition
         if indices == []:
-            collect_data(matrix, revealed_cell_indices, row_size, column_size)
-            unrevealed_cell_indices = set(range(0, row_size * column_size)) - revealed_cell_indices
-            picked_cell_index = random.choice(list(unrevealed_cell_indices))
+            
+            # Get data for training sets
+            if training:
+                collect_data(matrix, revealed_cell_indices, row_size, column_size)
+                unrevealed_cell_indices = set(range(0, row_size * column_size)) - revealed_cell_indices
+                picked_cell_index = random.choice(list(unrevealed_cell_indices))
+                
+            # Test sets
+            else:
+                picked_cell_index = get_most_trustworthy_cell_index(matrix, revealed_cell_indices, row_size, column_size)
+            
+            # Update revealed cell indices and last clicked cell
             revealed_cell_indices = update_revealed_cell_indices(matrix, revealed_cell_indices, picked_cell_index)
             last_clicked_cell_row, last_clicked_cell_column = divmod(picked_cell_index, column_size)
         
@@ -309,8 +323,7 @@ def collect_data(matrix, revealed_cell_indices, row_size, column_size):
                                 / temp_statistics['number_of_unrevealed_cells_around']
             
             # X data
-            # FIXME Filter X data to minimize cost
-            x_data = str(sum_of_probabilities) + ' ' + \
+            x_data = '1 ' + str(sum_of_probabilities) + ' ' + \
                     str(statistics['number_of_revealed_mines_around']) + ' ' + \
                     str(statistics['number_of_revealed_cells_around']) + ' ' + \
                     str(statistics['number_of_unrevealed_cells_around']) 
@@ -364,6 +377,82 @@ def get_statistics_from_around_cells(matrix, row_size, column_size, cell_index, 
             'number_of_revealed_mines_around': number_of_revealed_mines_around,
             'number_of_unrevealed_cells_around': number_of_unrevealed_cells_around}
 
+def get_most_trustworthy_cell_index(matrix, revealed_cell_indices, row_size, column_size):
+    """
+    Get most trustworthy cell index when AI should pick one randomly
+    """
+    unrevealed_cell_indices = set(range(0, row_size * column_size)) - revealed_cell_indices
+    expected_values_for_unrevealed_cells = []
+
+    for unrevealed_cell_index in unrevealed_cell_indices:
+        
+        statistics = get_statistics_from_around_cells(matrix, row_size, column_size,
+                unrevealed_cell_index, revealed_cell_indices)
+        
+        sum_of_probabilities = 0
+        
+        row, column = divmod(unrevealed_cell_index, column_size)
+        row_range = range(max(row - 1, 0), min(row + 1, row_size - 1) + 1)
+        column_range = range(max(column - 1, 0), min(column + 1, column_size - 1) + 1)
+        
+        for adjacent_row in row_range:
+            for adjacent_column in column_range:
+                
+                adjacent_cell_index = adjacent_row * column_size + adjacent_column
+                adjacent_cell_value = matrix[adjacent_cell_index]
+                if '-' in adjacent_cell_value:
+                    adjacent_cell_value = int(adjacent_cell_value.split('-')[0])
+                elif adjacent_cell_value != 'M':
+                    adjacent_cell_value = int(adjacent_cell_value)
+                
+                # Calulate sum of probabilities for revealed cells around
+                if adjacent_cell_index != unrevealed_cell_index and \
+                        adjacent_cell_index in revealed_cell_indices and \
+                        adjacent_cell_value != 'M' and adjacent_cell_value > 0:
+                    
+                    temp_statistics = get_statistics_from_around_cells(matrix, 
+                            row_size, column_size, adjacent_cell_index, revealed_cell_indices)
+                    sum_of_probabilities += (adjacent_cell_value - temp_statistics['number_of_revealed_mines_around']) \
+                            / temp_statistics['number_of_unrevealed_cells_around']
+        
+        # Calculate expected value for each cell
+        expected_values_for_unrevealed_cells.append(
+                {'index': unrevealed_cell_index, 'expected_value':
+                    sess.run(hypothesis, feed_dict={X: [[1], [sum_of_probabilities], 
+                        [statistics['number_of_revealed_mines_around']], 
+                        [statistics['number_of_revealed_cells_around']], 
+                        [statistics['number_of_unrevealed_cells_around']]]})})
+
+    # Pick trustworthy cell
+    # NOTE: More closer to 1 means it would be mine and more closer to 0 means it would not be mine
+    expected_values_for_unrevealed_cells = sorted(expected_values_for_unrevealed_cells, key=lambda k: k['expected_value'])
+    cell_with_minimum_expected_value = expected_values_for_unrevealed_cells[0]
+    cell_with_maximum_expected_value = expected_values_for_unrevealed_cells[-1]
+    
+    picked_cell_index = -1
+    is_mine = False
+
+    # Choose cell whose expected value is closest to 0 or 1
+    if cell_with_minimum_expected_value['expected_value'] < 1 - cell_with_maximum_expected_value['expected_value']:
+        picked_cell_index = cell_with_minimum_expected_value['index']
+        is_mine = False
+    else:
+        picked_cell_index = cell_with_maximum_expected_value['index']
+        is_mine = True
+
+    global success_counter
+    global fail_counter
+
+    # Compare with real value
+    if is_mine == True and matrix[picked_cell_index] == 'M':
+        success_counter += 1
+    elif is_mine == False and matrix[picked_cell_index] != 'M':
+        success_counter += 1
+    else:
+        fail_counter += 1
+
+    return picked_cell_index
+
 if __name__ == '__main__':
     """
     Play Minesweeper game as AI for a given time
@@ -372,9 +461,13 @@ if __name__ == '__main__':
 
     training_data = open('./train.txt', 'w')
 
-    # Get training data set
-    for count in range(0, 100):
-        play_minesweeper_game_as_ai()
+    print('Get data : Start')
+
+    # Get data for training sets
+    for count in range(0, 1000):
+        play_minesweeper_game_as_ai(training=True)
+
+    print('Get data : End')
     
     training_data.close()
 
@@ -390,6 +483,7 @@ if __name__ == '__main__':
     W = tf.Variable(tf.random_uniform([1, len(x_data)], -1.0, 1.0))
 
     # Hypothesis
+    global hypothesis
     h = tf.matmul(W, X)
     hypothesis = tf.div(1.0, 1.0 + tf.exp(-h))
 
@@ -407,8 +501,11 @@ if __name__ == '__main__':
     init = tf.global_variables_initializer()
     
     # Launch the graph
+    global sess
     sess = tf.Session()
     sess.run(init)
+
+    print('Training set : Start')
 
     # Fit the line
     for step in range(0, 2001):
@@ -416,4 +513,21 @@ if __name__ == '__main__':
         if step % 20 == 0:
             print(step, sess.run(cost, feed_dict={X: x_data, Y: y_data}), sess.run(W))
 
-    # TODO Test sets
+    print('Training set : End')
+
+    global success_counter
+    global fail_counter
+
+    success_counter = 0
+    fail_counter = 0
+
+    print('Test set : Start')
+
+    # Test sets
+    for count in range(0, 100):
+        play_minesweeper_game_as_ai(training=False)
+
+    print('Test set : End')
+
+    # Measure accuracy of hypothesis
+    print('Average accuracy : ' + str(success_counter / (success_counter + fail_counter)))
