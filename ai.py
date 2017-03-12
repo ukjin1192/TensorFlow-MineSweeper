@@ -2,7 +2,9 @@
 # -*- coding:utf-8 -*-
 
 from utils import create_map 
+import numpy as np
 import random
+import tensorflow as tf
 
 def play_minesweeper_game_as_ai():
     """
@@ -307,16 +309,20 @@ def collect_data(matrix, revealed_cell_indices, row_size, column_size):
                                 / temp_statistics['number_of_unrevealed_cells_around']
             
             # X data
-            x_data_file.write(str(sum_of_probabilities) + ' ' +
-                    str(statistics['number_of_revealed_mines_around']) + ' ' +
-                    str(statistics['number_of_revealed_cells_around']) + ' ' +
-                    str(statistics['number_of_unrevealed_cells_around']) + '\n')
+            # FIXME Filter X data to minimize cost
+            x_data = str(sum_of_probabilities) + ' ' + \
+                    str(statistics['number_of_revealed_mines_around']) + ' ' + \
+                    str(statistics['number_of_revealed_cells_around']) + ' ' + \
+                    str(statistics['number_of_unrevealed_cells_around']) 
             
             # Y data
             if matrix[unrevealed_cell_index] == 'M':
-                y_data_file.write('1\n')
+                y_data = 1
             else:
-                y_data_file.write('0\n')
+                y_data = 0
+            
+            # Record X, Y data
+            training_data.write(str(x_data) + ' ' + str(y_data) + '\n')
 
     return None
 
@@ -362,14 +368,52 @@ if __name__ == '__main__':
     """
     Play Minesweeper game as AI for a given time
     """
-    global x_data_file
-    global y_data_file
+    global training_data
 
-    x_data_file = open('./x_data.txt', 'w')
-    y_data_file = open('./y_data.txt', 'w')
+    training_data = open('./train.txt', 'w')
 
-    for count in range(0, 1):
+    # Get training data set
+    for count in range(0, 100):
         play_minesweeper_game_as_ai()
     
-    x_data_file.close()
-    y_data_file.close()
+    training_data.close()
+
+    # Read X, Y data using numpy
+    xy = np.loadtxt('./train.txt', unpack=True, dtype='float32')
+    x_data = xy[0:-1]
+    y_data = xy[-1]
+
+    # Logistic classification using TensorFlow
+    X = tf.placeholder(tf.float32)
+    Y = tf.placeholder(tf.float32)
+
+    W = tf.Variable(tf.random_uniform([1, len(x_data)], -1.0, 1.0))
+
+    # Hypothesis
+    h = tf.matmul(W, X)
+    hypothesis = tf.div(1.0, 1.0 + tf.exp(-h))
+
+    # Cost function
+    cost = -tf.reduce_mean(Y * tf.log(hypothesis) + (1 - Y) * tf.log(1 - hypothesis))
+
+    # Learning rate
+    a = tf.Variable(0.1)
+
+    # Minimize cost by gradient descent algorithm
+    optimizer = tf.train.GradientDescentOptimizer(a)
+    train = optimizer.minimize(cost)
+
+    # Data initialization
+    init = tf.global_variables_initializer()
+    
+    # Launch the graph
+    sess = tf.Session()
+    sess.run(init)
+
+    # Fit the line
+    for step in range(0, 2001):
+        sess.run(train, feed_dict={X: x_data, Y: y_data})
+        if step % 20 == 0:
+            print(step, sess.run(cost, feed_dict={X: x_data, Y: y_data}), sess.run(W))
+
+    # TODO Test sets
