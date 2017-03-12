@@ -1,6 +1,7 @@
 ## Summary
 
 - Proof of concept for using TensorFlow to improve AI at <a href="https://minemine.io">this Minesweeper game</a>
+- Mission : Improve accuracy when AI should pick random cell with given condition
 
 ## Procedure
 
@@ -25,8 +26,9 @@
 		- Learning rate = 0.1
 	  - Use ReLu rather than Sigmoid
 		- Dropout rate = 0.7
-- Training sets : Repeat above procedure to minimize error
-- Test sets : Measure accuracy of model with machine learning
+- Get data set : Repeat above procedure many times to get big data
+- Training sets : Create reliable model with machine learning
+- Test sets : Measure accuracy of model
 
 ## Prerequisite
 
@@ -40,7 +42,8 @@
 $ python3 ai.py
 ~~~~
 
-## Result (TBD)
+## Result
 
-- Preparing data set with 100 games
-- After 2000 training sets, average accuracy ~= N(%)
+- Collect data with 1000 games
+- 2000 training sets
+- (With test sets) Accuracy ~= 87(%)
