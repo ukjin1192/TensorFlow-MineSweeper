@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-   
 
 from utils import create_map 
 import numpy as np
@@ -20,6 +20,8 @@ def play_minesweeper_game_as_ai(**kwargs):
     row_size = map_info['row_size']
     column_size = map_info['column_size']
     matrix = map_info['matrix'].split(',')
+    
+    temp = None
 
     # Initialize variables
     unrevealed_cell_indices = set(range(0, row_size * column_size))
